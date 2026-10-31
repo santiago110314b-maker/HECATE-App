@@ -1,0 +1,497 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hécate - HUD Assistant</title>
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a0015">
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,{
+        %22name%22: %22H%C3%A9cate%22,
+        %22short_name%22: %22H%C3%A9cate%22,
+        %22start_url%22: %22./index.html%22,
+        %22display%22: %22standalone%22,
+        %22background_color%22: %22%230a0015%22,
+        %22theme_color%22: %22%237b2cbf%22,
+        %22icons%22: [{
+            %22src%22: %22https://via.placeholder.com/192/7b2cbf/ffffff?text=H%22,
+            %22sizes%22: %22192x192%22,
+            %22type%22: %22image/png%22
+        }]
+    }">
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #9d4edd;
+            --primary-glow: rgba(157, 78, 221, 0.6);
+            --dark-bg: #05010a;
+            --panel-bg: rgba(20, 5, 35, 0.75);
+            --accent: #c77dff;
+            --text-main: #e0aaff;
+            --danger: #ff595e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Rajdhani', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-main);
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 50% 20%, rgba(74, 14, 115, 0.25) 0%, transparent 60%),
+                linear-gradient(rgba(5, 1, 10, 0.9), rgba(5, 1, 10, 0.9));
+        }
+
+        /* HUD Header & Widget */
+        header {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 1px solid rgba(157, 78, 221, 0.3);
+            background: rgba(10, 0, 20, 0.85);
+            box-shadow: 0 4px 20px rgba(123, 44, 191, 0.2);
+            z-index: 10;
+        }
+
+        .hud-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 0 10px var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .widget-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 400px;
+            font-size: 0.95rem;
+            background: var(--panel-bg);
+            border: 1px solid rgba(157, 78, 221, 0.4);
+            border-radius: 8px;
+            padding: 6px 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .widget-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #d8b4fe;
+        }
+
+        .widget-item i {
+            color: var(--accent);
+        }
+
+        /* App Workspace */
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Chat & Log Interface */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            line-height: 1.4;
+            animation: fadeIn 0.3s ease-out;
+            word-break: break-word;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background: rgba(157, 78, 221, 0.2);
+            border: 1px solid var(--primary);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.hecate {
+            background: rgba(20, 5, 35, 0.9);
+            border: 1px solid rgba(199, 125, 255, 0.4);
+            color: var(--text-main);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            box-shadow: 0 0 10px rgba(123, 44, 191, 0.15);
+        }
+
+        /* Quick App Links Grid */
+        .shortcuts-grid {
+            display: flex;
+            gap: 10px;
+            padding: 8px 15px;
+            overflow-x: auto;
+            background: rgba(10, 0, 20, 0.5);
+            border-top: 1px solid rgba(157, 78, 221, 0.2);
+        }
+
+        .shortcut-btn {
+            background: var(--panel-bg);
+            border: 1px solid var(--primary);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .shortcut-btn:active {
+            background: var(--primary);
+            transform: scale(0.95);
+        }
+
+        /* Input Controls Area */
+        .input-area {
+            padding: 12px 15px;
+            background: rgba(10, 0, 20, 0.95);
+            border-top: 1px solid rgba(157, 78, 221, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-box {
+            flex: 1;
+            background: rgba(20, 5, 35, 0.9);
+            border: 1px solid rgba(157, 78, 221, 0.5);
+            border-radius: 25px;
+            padding: 10px 16px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-box:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        .action-btn {
+            background: var(--panel-bg);
+            border: 1px solid var(--primary);
+            color: var(--accent);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn.listening {
+            background: var(--danger);
+            border-color: #ffb703;
+            color: #fff;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 89, 94, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 89, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 89, 94, 0); }
+        }
+
+        .action-btn:active {
+            transform: scale(0.92);
+        }
+
+        /* Web View Modal / Overlay for Unlimited Browsing */
+        #browser-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--dark-bg);
+            display: none;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .browser-header {
+            padding: 10px 15px;
+            background: #10021c;
+            border-bottom: 1px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .browser-header span {
+            font-size: 0.9rem;
+            color: var(--accent);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 70%;
+        }
+
+        .close-browser {
+            background: var(--danger);
+            border: none;
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .browser-content {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HUD Header con Widget integrados -->
+    <header>
+        <div class="hud-title">HÉCATE S.I.</div>
+        <div class="widget-container">
+            <div class="widget-item">
+                <i class="fa-regular fa-clock"></i>
+                <span id="widget-time">00:00</span>
+            </div>
+            <div class="widget-item">
+                <i class="fa-regular fa-calendar-days"></i>
+                <span id="widget-date">--/--/--</span>
+            </div>
+            <div class="widget-item">
+                <i class="fa-solid fa-cloud-sun"></i>
+                <span id="widget-weather">Estable</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Espacio Principal -->
+    <div class="workspace">
+        <div class="chat-container" id="chat-log">
+            <div class="message hecate">
+                Saludos, amo. Sistemas en línea y conectados sin limitaciones. ¿Qué orden desea ejecutar?
+            </div>
+        </div>
+
+        <!-- Accesos directos a Apps y Webs -->
+        <div class="shortcuts-grid">
+            <button class="shortcut-btn" onclick="openWeb('https://www.google.com')"><i class="fa-brands fa-google"></i> Google</button>
+            <button class="shortcut-btn" onclick="openWeb('https://web.whatsapp.com')"><i class="fa-brands fa-whatsapp"></i> WhatsApp</button>
+            <button class="shortcut-btn" onclick="openWeb('https://www.youtube.com')"><i class="fa-brands fa-youtube"></i> YouTube</button>
+            <button class="shortcut-btn" onclick="openWeb('https://open.spotify.com')"><i class="fa-brands fa-spotify"></i> Spotify</button>
+        </div>
+
+        <!-- Barra de Entrada (Texto y Voz) -->
+        <div class="input-area">
+            <input type="text" id="user-input" class="input-box" placeholder="Escribe un comando u orden..." autocomplete="off">
+            <button class="action-btn" id="mic-btn" onclick="toggleSpeechRecognition()" title="Activar Voz"><i class="fa-solid fa-microphone"></i></button>
+            <button class="action-btn" onclick="handleSendText()" title="Enviar"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Navegador Integrado Sin Límites -->
+    <div id="browser-overlay">
+        <div class="browser-header">
+            <span id="browser-url-label">Navegando...</span>
+            <button class="close-browser" onclick="closeWeb()">Cerrar</button>
+        </div>
+        <iframe id="browser-frame" class="browser-content" src=""></iframe>
+    </div>
+
+    <script>
+        // Actualizar Widget de Hora, Fecha y Clima en tiempo real
+        function updateWidget() {
+            const now = new Date();
+            document.getElementById('widget-time').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('widget-date').innerText = now.toLocaleDateString([], { day: '2-digit', month: '2-digit' });
+        }
+        setInterval(updateWidget, 1000);
+        updateWidget();
+
+        // Sistema de Chat y Registro
+        const chatLog = document.getElementById('chat-log');
+        const userInput = document.getElementById('user-input');
+
+        function appendMessage(sender, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', sender === 'Tú' ? 'user' : 'hecate');
+            msgDiv.innerText = text;
+            chatLog.appendChild(msgDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        // Motor de Síntesis de Voz (Hécate Habla)
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Detener voz anterior si la hubiera
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-ES';
+                utterance.rate = 1.05;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Procesador de Comandos Avanzado
+        function processCommand(text) {
+            appendMessage("Tú", text);
+            userInput.value = "";
+
+            let reply = "Comando procesado y ejecutado con éxito, amo.";
+            const query = text.toLowerCase();
+
+            if (query.includes("hola") || query.includes("saludos")) {
+                reply = "Hola, amo. Todos los protocolos de Hécate están activos y a su servicio.";
+            } else if (query.includes("hora")) {
+                reply = "Son las " + new Date().toLocaleTimeString() + ", sistemas sincronizados.";
+            } else if (query.includes("clima")) {
+                reply = "Los sensores reportan condiciones meteorológicas estables en su zona.";
+            } else if (query.includes("abre google")) {
+                openWeb("https://www.google.com");
+                reply = "Abriendo Google sin restricciones.";
+            } else if (query.includes("abre youtube")) {
+                openWeb("https://www.youtube.com");
+                reply = "Abriendo YouTube.";
+            } else if (query.includes("busca") || query.includes("navega")) {
+                const searchParam = query.replace("busca", "").replace("navega", "").trim();
+                openWeb(`https://www.google.com/search?q=${encodeURIComponent(searchParam)}`);
+                reply = `Buscando información sobre ${searchParam} en la red.`;
+            }
+
+            appendMessage("Hécate", reply);
+            speak(reply);
+        }
+
+        function handleSendText() {
+            const text = userInput.value.trim();
+            if (text !== "") {
+                processCommand(text);
+            }
+        }
+
+        userInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                handleSendText();
+            }
+        });
+
+        // Reconocimiento de Voz (Comandos de Voz)
+        let recognition;
+        let isListening = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'es-ES';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                isListening = true;
+                document.getElementById('mic-btn').classList.add('listening');
+            };
+
+            recognition.onresult = function(event) {
+                const speechToText = event.results[0][0].transcript;
+                processCommand(speechToText);
+            };
+
+            recognition.onerror = function() {
+                stopListening();
+            };
+
+            recognition.onend = function() {
+                stopListening();
+            };
+        }
+
+        function toggleSpeechRecognition() {
+            if (!recognition) {
+                alert("Su navegador no soporta el reconocimiento de voz por API web. Use Google Chrome.");
+                return;
+            }
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.error(e);
+                }
+            }
+        }
+
+        function stopListening() {
+            isListening = false;
+            document.getElementById('mic-btn').classList.remove('listening');
+        }
+
+        // Navegador Web Interno Sin Límites
+        function openWeb(url) {
+            const overlay = document.getElementById('browser-overlay');
+            const frame = document.getElementById('browser-frame');
+            const label = document.getElementById('browser-url-label');
+            
+            frame.src = url;
+            label.innerText = url;
+            overlay.style.display = 'flex';
+        }
+
+        function closeWeb() {
+            const overlay = document.getElementById('browser-overlay');
+            const frame = document.getElementById('browser-frame');
+            frame.src = '';
+            overlay.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
